@@ -1,0 +1,53 @@
+# Database only (for local development with `npm run dev`):   docker compose up -d db
+# Full stack (database + API + web on http://localhost:8080):  docker compose --profile full up --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: belle
+      POSTGRES_PASSWORD: belle_dev_password
+      POSTGRES_DB: belle
+    ports:
+      - "5432:5432"
+    volumes:
+      - belle_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U belle -d belle"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    profiles: ["full"]
+    build: { context: ., dockerfile: server/Dockerfile }
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql://belle:belle_dev_password@db:5432/belle
+      CLIENT_ORIGIN: http://localhost:8080
+      # Change both secrets before exposing this anywhere. They must be 32+ characters.
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-only-access-secret-change-me-please-0001}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-only-refresh-secret-change-me-please-002}
+      # The trial stack is served over plain HTTP, so the refresh cookie cannot be Secure here.
+      # Remove this line (or set true) once the site is behind HTTPS.
+      COOKIE_SECURE: "false"
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    volumes:
+      - belle_uploads:/data/uploads
+
+  web:
+    profiles: ["full"]
+    build: { context: ., dockerfile: client/Dockerfile }
+    restart: unless-stopped
+    depends_on: [api]
+    ports:
+      - "8080:80"
+
+volumes:
+  belle_pgdata:
+  belle_uploads:
