@@ -1,0 +1,117 @@
+/** OpenAPI 3 description, built from a compact route table so it stays easy to keep in sync. */
+type Auth = 'public' | 'user' | 'owner' | 'staff' | 'admin';
+type Row = [method: 'get' | 'post' | 'patch' | 'put' | 'delete', path: string, tag: string, summary: string, auth: Auth];
+
+const routes: Row[] = [
+  ['post', '/auth/register', 'Auth', 'Register a customer or salon owner (owner salons start PENDING)', 'public'],
+  ['post', '/auth/login', 'Auth', 'Sign in; sets the refresh cookie and returns an access token', 'public'],
+  ['post', '/auth/refresh', 'Auth', 'Rotate the refresh cookie and get a new access token (needs X-Requested-With: belle)', 'public'],
+  ['post', '/auth/logout', 'Auth', 'Revoke the current refresh token (needs X-Requested-With: belle)', 'public'],
+  ['post', '/auth/forgot-password', 'Auth', 'Request a password reset (same response whether or not the account exists)', 'public'],
+  ['post', '/auth/reset-password', 'Auth', 'Set a new password using a reset token', 'public'],
+  ['get', '/auth/me', 'Auth', 'Current user and managed salons', 'user'],
+  ['patch', '/auth/me', 'Auth', 'Update profile', 'user'],
+  ['post', '/auth/change-password', 'Auth', 'Change password (revokes all sessions)', 'user'],
+
+  ['get', '/meta', 'Public', 'Brand, categories, locations, notification-channel and payment-provider status', 'public'],
+  ['get', '/popular-services', 'Public', 'Most-booked services', 'public'],
+  ['get', '/promotions', 'Public', 'Currently active promotions', 'public'],
+  ['get', '/testimonials', 'Public', 'Genuine visible reviews only (may be empty)', 'public'],
+  ['get', '/salons', 'Public', 'Search salons (q, city, neighborhood, category, minPrice, maxPrice, minRating, date, timeFrom, timeTo, sort, page)', 'public'],
+  ['get', '/salons/{slug}', 'Public', 'Salon profile with services, staff, hours, gallery and recent reviews', 'public'],
+  ['get', '/salons/{slug}/reviews', 'Public', 'Paginated reviews', 'public'],
+  ['get', '/salons/{slug}/availability', 'Public', 'Bookable slots for a service/date (server-calculated)', 'public'],
+  ['get', '/salons/{slug}/availability-range', 'Public', 'Slot counts per day for a date picker', 'public'],
+
+  ['post', '/me/appointments', 'Customer', 'Create a booking (revalidated in a transaction; prevents double-booking)', 'user'],
+  ['get', '/me/appointments', 'Customer', 'List my bookings (tab=upcoming|past|all)', 'user'],
+  ['get', '/me/appointments/{id}', 'Customer', 'Booking details, history and allowed actions', 'user'],
+  ['post', '/me/appointments/{id}/cancel', 'Customer', 'Cancel according to the salon policy', 'user'],
+  ['post', '/me/appointments/{id}/reschedule', 'Customer', 'Move a booking to another available time', 'user'],
+  ['post', '/me/appointments/{id}/review', 'Customer', 'Review a completed booking (once)', 'user'],
+  ['post', '/me/appointments/{id}/pay', 'Customer', 'Start online payment (409 until a real provider adapter is configured)', 'user'],
+  ['get', '/me/favorites', 'Customer', 'Favorite salons', 'user'],
+  ['put', '/me/favorites/{salonId}', 'Customer', 'Add favorite', 'user'],
+  ['delete', '/me/favorites/{salonId}', 'Customer', 'Remove favorite', 'user'],
+  ['get', '/me/notifications', 'Customer', 'In-app notifications (meta.unreadCount)', 'user'],
+  ['post', '/me/notifications/read-all', 'Customer', 'Mark all read', 'user'],
+  ['post', '/me/notifications/{id}/read', 'Customer', 'Mark one read', 'user'],
+
+  ['get', '/owner/salons', 'Salon', 'Salons I can manage', 'staff'],
+  ['get', '/owner/salons/{salonId}/overview', 'Salon', 'Dashboard overview', 'staff'],
+  ['get', '/owner/salons/{salonId}/appointments', 'Salon', 'List/filter appointments (staff see only their own)', 'staff'],
+  ['post', '/owner/salons/{salonId}/appointments', 'Salon', 'Create a manual appointment (conflict-checked)', 'staff'],
+  ['get', '/owner/salons/{salonId}/appointments/{id}', 'Salon', 'Appointment detail with status history and payments', 'staff'],
+  ['patch', '/owner/salons/{salonId}/appointments/{id}/status', 'Salon', 'Confirm / reject / complete / cancel / no-show', 'staff'],
+  ['post', '/owner/salons/{salonId}/appointments/{id}/reschedule', 'Salon', 'Reschedule', 'staff'],
+  ['patch', '/owner/salons/{salonId}/appointments/{id}/notes', 'Salon', 'Private notes', 'staff'],
+  ['post', '/owner/salons/{salonId}/appointments/{id}/payments', 'Salon', 'Record a cash payment (no overpayment)', 'staff'],
+  ['get', '/owner/salons/{salonId}/staff', 'Salon', 'Staff with schedules, breaks, time off', 'staff'],
+  ['get', '/owner/salons/{salonId}/services', 'Salon', 'All services including unpublished', 'staff'],
+  ['get', '/owner/salons/{salonId}/profile', 'Salon', 'Full profile, hours and gallery', 'owner'],
+  ['patch', '/owner/salons/{salonId}/profile', 'Salon', 'Update profile and policies', 'owner'],
+  ['put', '/owner/salons/{salonId}/hours', 'Salon', 'Replace business hours', 'owner'],
+  ['post', '/owner/salons/{salonId}/images', 'Salon', 'Upload a gallery image (multipart field "image")', 'owner'],
+  ['patch', '/owner/salons/{salonId}/images/{id}', 'Salon', 'Edit alt text / order', 'owner'],
+  ['delete', '/owner/salons/{salonId}/images/{id}', 'Salon', 'Delete image', 'owner'],
+  ['post', '/owner/salons/{salonId}/services', 'Salon', 'Create service', 'owner'],
+  ['patch', '/owner/salons/{salonId}/services/{id}', 'Salon', 'Update / publish / unpublish service', 'owner'],
+  ['delete', '/owner/salons/{salonId}/services/{id}', 'Salon', 'Delete (or unpublish if it has bookings)', 'owner'],
+  ['post', '/owner/salons/{salonId}/staff', 'Salon', 'Add staff member (optional login account)', 'owner'],
+  ['patch', '/owner/salons/{salonId}/staff/{id}', 'Salon', 'Edit / activate / deactivate staff', 'owner'],
+  ['put', '/owner/salons/{salonId}/staff/{id}/schedule', 'Salon', 'Replace shifts and breaks', 'owner'],
+  ['post', '/owner/salons/{salonId}/staff/{id}/time-off', 'Salon', 'Add leave / day off', 'owner'],
+  ['delete', '/owner/salons/{salonId}/staff/{id}/time-off/{offId}', 'Salon', 'Remove leave', 'owner'],
+  ['get', '/owner/salons/{salonId}/reports/summary', 'Salon', 'Report summary for a date range', 'owner'],
+  ['get', '/owner/salons/{salonId}/reports/export.csv', 'Salon', 'CSV export (type=appointments|summary)', 'owner'],
+  ['get', '/owner/salons/{salonId}/reviews', 'Salon', 'Reviews for my salon', 'owner'],
+  ['patch', '/owner/salons/{salonId}/reviews/{id}/reply', 'Salon', 'Reply to a review', 'owner'],
+
+  ['get', '/admin/overview', 'Admin', 'Platform overview', 'admin'],
+  ['get', '/admin/users', 'Admin', 'List users', 'admin'],
+  ['patch', '/admin/users/{id}', 'Admin', 'Change role / activate / deactivate', 'admin'],
+  ['get', '/admin/salons', 'Admin', 'List salons', 'admin'],
+  ['patch', '/admin/salons/{id}/status', 'Admin', 'Approve, suspend or return to review', 'admin'],
+  ['patch', '/admin/salons/{id}/verify', 'Admin', 'Mark verified (demo salons cannot be verified)', 'admin'],
+  ['get', '/admin/categories', 'Admin', 'Categories', 'admin'],
+  ['post', '/admin/categories', 'Admin', 'Create category', 'admin'],
+  ['patch', '/admin/categories/{id}', 'Admin', 'Update category', 'admin'],
+  ['delete', '/admin/categories/{id}', 'Admin', 'Delete unused category', 'admin'],
+  ['get', '/admin/bookings', 'Admin', 'All bookings', 'admin'],
+  ['get', '/admin/reviews', 'Admin', 'Reviews for moderation', 'admin'],
+  ['patch', '/admin/reviews/{id}', 'Admin', 'Hide / show a review', 'admin'],
+  ['get', '/admin/promotions', 'Admin', 'Promotions', 'admin'],
+  ['post', '/admin/promotions', 'Admin', 'Create promotion', 'admin'],
+  ['patch', '/admin/promotions/{id}', 'Admin', 'Update promotion', 'admin'],
+  ['delete', '/admin/promotions/{id}', 'Admin', 'Delete promotion', 'admin'],
+  ['get', '/admin/settings', 'Admin', 'Platform settings', 'admin'],
+  ['put', '/admin/settings', 'Admin', 'Update platform settings', 'admin'],
+  ['get', '/admin/audit', 'Admin', 'Audit trail', 'admin'],
+  ['get', '/admin/reports', 'Admin', 'Platform analytics for a date range', 'admin'],
+  ['post', '/webhooks/{provider}', 'Payments', 'Payment webhook (501 until an adapter is implemented)', 'public'],
+  ['get', '/health', 'Public', 'Health check', 'public'],
+];
+
+export function buildOpenApi() {
+  const paths: Record<string, Record<string, unknown>> = {};
+  for (const [method, path, tag, summary, auth] of routes) {
+    const params = [...path.matchAll(/\{(\w+)\}/g)].map((m) => ({ name: m[1], in: 'path', required: true, schema: { type: 'string' } }));
+    (paths[path] ??= {})[method] = {
+      tags: [tag],
+      summary: `${summary}${auth === 'public' ? '' : ` — requires ${auth === 'user' ? 'sign-in' : auth === 'staff' ? 'staff, owner or admin' : auth}`}`,
+      parameters: params,
+      ...(auth !== 'public' ? { security: [{ bearerAuth: [] }] } : {}),
+      responses: {
+        '200': { description: 'Success: { success: true, data, meta? }' },
+        '400': { description: 'Validation error' }, '401': { description: 'Not signed in' }, '403': { description: 'Not allowed' }, '404': { description: 'Not found' }, '409': { description: 'Conflict' }, '422': { description: 'Rule violation' },
+      },
+    };
+  }
+  return {
+    openapi: '3.0.3',
+    info: { title: 'Belle Ethiopia API', version: '1.0.0', description: 'All routes are prefixed with /api/v1. Responses: { success, data, meta } or { success: false, error: { code, message, details } }. Times are ISO-8601 UTC; salon-local dates use Africa/Addis_Ababa. Money is an exact decimal string in ETB.' },
+    servers: [{ url: '/api/v1' }],
+    components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } } },
+    paths,
+  };
+}
